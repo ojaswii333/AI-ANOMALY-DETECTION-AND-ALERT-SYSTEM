@@ -1,0 +1,36 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build and Temp
+node_modules/
+.next/
+build/
+dist/
+.vite/
+*.log
+*.tmp
+*.db
+*.db-journal
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+env/
+ENV/
+
+# AI Models & Data (Large files)
+*.pkl
+*.pth
+*.h5
+training_data.json
+test_data.json
+
+# Git
+.git/
+!.gitignore
