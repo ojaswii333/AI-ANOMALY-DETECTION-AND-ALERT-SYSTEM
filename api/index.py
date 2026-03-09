@@ -4,8 +4,8 @@ from pathlib import Path
 
 # Calculate paths relative to this file (root/api/index.py)
 root_dir = Path(__file__).parent.parent
-backend_dir = root_dir / "ai-anomaly-system" / "backend"
-ml_dir = root_dir / "ai-anomaly-system" / "ml"
+backend_dir = root_dir / "backend"
+ml_dir = root_dir / "ml"
 
 # Add directories to sys.path to allow imports to work
 sys.path.append(str(backend_dir))

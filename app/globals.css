@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+@theme {
+  --color-obsidian: #050505;
+  --color-surface: #0A0A0B;
+  --color-primary: #00F2FF;
+  --color-secondary: #8B5CF6;
+  --color-anomaly: #FF2E2E;
+  --color-success: #10B981;
+  --color-text-main: #F8FAFC;
+  --color-text-muted: #94A3B8;
+
+  --font-outfit: "Outfit", sans-serif;
+  --font-jakarta: "Plus Jakarta Sans", sans-serif;
+
+  --radius-2xl: 1rem;
+}
+
+:root {
+  --bg-obsidian: #050505;
+  --bg-surface: #0A0A0B;
+  --primary: #00F2FF;
+  --primary-glow: rgba(0, 242, 255, 0.4);
+  --secondary: #8B5CF6;
+  --secondary-glow: rgba(139, 92, 246, 0.4);
+  --anomaly: #FF2E2E;
+  --anomaly-glow: rgba(255, 46, 46, 0.4);
+  --success: #10B981;
+  --success-glow: rgba(16, 185, 129, 0.4);
+  --glass-bg: rgba(15, 15, 18, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.03);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-obsidian);
+    color: var(--color-text-main);
+    font-family: var(--font-jakarta);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-outfit);
+  }
+}
+
+@layer components {
+  .premium-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-2xl);
+    border: 1px solid var(--glass-border);
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .premium-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -10;
+    background: linear-gradient(to bottom right, var(--glass-highlight), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .premium-card:hover::before {
+    opacity: 1;
+  }
+
+  .premium-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    transform: translateY(-4px);
+  }
+
+  .neon-button {
+    position: relative;
+    overflow: hidden;
+    border-radius: 9999px;
+    background-color: var(--primary);
+    padding: 0.75rem 2rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #000;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .neon-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px var(--primary-glow);
+  }
+
+  .bg-grid {
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .mesh-gradient {
+    background: radial-gradient(at 0% 0%, hsla(180, 100%, 50%, 0.15) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(260, 100%, 50%, 0.15) 0, transparent 50%),
+      radial-gradient(at 50% 100%, hsla(320, 100%, 50%, 0.1) 0, transparent 50%);
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+  }
+
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+.custom-cursor-none {
+  cursor: none !important;
+}
+
+.custom-cursor-none a,
+.custom-cursor-none button,
+.custom-cursor-none [role="button"] {
+  cursor: none !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
