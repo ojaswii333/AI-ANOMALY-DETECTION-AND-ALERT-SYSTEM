@@ -9,7 +9,7 @@ import RecentReadings from '../../components/RecentReadings';
 import AlertCenter from '../../components/AlertCenter';
 import StatusCard from '../../components/StatusCard';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function DashboardPage() {
     const [stats, setStats] = useState({
