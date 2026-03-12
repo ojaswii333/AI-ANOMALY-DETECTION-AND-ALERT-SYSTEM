@@ -22,6 +22,8 @@ export default function DashboardPage() {
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(new Date());
+    const [streamStatus, setStreamStatus] = useState('OFFLINE'); // 'LIVE' | 'IDLE' | 'OFFLINE'
+    const [prevReadingCount, setPrevReadingCount] = useState(0);
 
     const fetchData = async () => {
         try {
@@ -31,12 +33,25 @@ export default function DashboardPage() {
                 axios.get(`${API_BASE_URL}/alerts/recent?limit=10`)
             ]);
             setStats(statsRes.data);
-            setReadings(historyRes.data.readings || []);
+            const newReadings = historyRes.data.readings || [];
+            setReadings(newReadings);
             setAlerts(alertsRes.data.alerts || []);
             setLastUpdated(new Date());
             setLoading(false);
+
+            // Check if new data is flowing in
+            const currentCount = statsRes.data.total_readings || 0;
+            if (currentCount > prevReadingCount && prevReadingCount > 0) {
+                setStreamStatus('LIVE');
+            } else if (currentCount > 0) {
+                setStreamStatus('IDLE');
+            } else {
+                setStreamStatus('IDLE');
+            }
+            setPrevReadingCount(currentCount);
         } catch (error) {
             console.error("Dashboard Fetch Error:", error);
+            setStreamStatus('OFFLINE');
             setLoading(false);
         }
     };
@@ -107,9 +122,18 @@ export default function DashboardPage() {
                         <p className="text-[8px] font-black uppercase tracking-widest text-text-muted mb-1">Last Neural Sync</p>
                         <p className="text-xs font-mono text-primary">{lastUpdated.toLocaleTimeString()}</p>
                     </div>
-                    <div className="premium-card flex items-center gap-4 py-3 px-6 bg-primary/5 border-primary/20">
-                        <div className="h-3 w-3 rounded-full bg-primary animate-ping" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Neural Stream LIVE</span>
+                    <div className={`premium-card flex items-center gap-4 py-3 px-6 ${streamStatus === 'LIVE' ? 'bg-primary/5 border-primary/20' :
+                            streamStatus === 'IDLE' ? 'bg-amber-500/5 border-amber-500/20' :
+                                'bg-red-500/5 border-red-500/20'
+                        }`}>
+                        <div className={`h-3 w-3 rounded-full ${streamStatus === 'LIVE' ? 'bg-primary animate-ping' :
+                                streamStatus === 'IDLE' ? 'bg-amber-500 animate-pulse' :
+                                    'bg-red-500'
+                            }`} />
+                        <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${streamStatus === 'LIVE' ? 'text-primary' :
+                                streamStatus === 'IDLE' ? 'text-amber-500' :
+                                    'text-red-500'
+                            }`}>Neural Stream {streamStatus}</span>
                     </div>
                 </div>
             </motion.div>

@@ -2,6 +2,7 @@
 FastAPI Backend - AI Anomaly Detection System
 ==============================================
 Production-grade REST API for Render deployment
+Self-sustaining: trains ML model in-memory + auto-generates live sensor data
 """
 
 from fastapi import FastAPI, HTTPException
@@ -13,15 +14,14 @@ from datetime import datetime
 import json
 import os
 import sys
+import random
+import threading
+import time
 from pathlib import Path
 
-# Add ML module to path
-sys.path.append(str(Path(__file__).parent.parent / "ml"))
-
-try:
-    from anomaly_detector import AnomalyDetector
-except ImportError:
-    AnomalyDetector = None
+import numpy as np
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
 
 # ============================================================
 # FastAPI Application
@@ -30,7 +30,7 @@ except ImportError:
 app = FastAPI(
     title="AI Anomaly Detection API",
     description="Production-grade anomaly detection for IoT sensors",
-    version="2.0.0"
+    version="3.0.0"
 )
 
 app.add_middleware(
@@ -116,28 +116,146 @@ def store_alert(device_id, ldr_value, anomaly_score, alert_type):
     conn.close()
 
 # ============================================================
-# Global State
+# ML Model — Trained In-Memory at Startup
 # ============================================================
 
-detector = None
+model = None
+scaler = None
 model_loaded = False
 start_time = datetime.now()
 
-def load_model():
-    global detector, model_loaded
-    model_path = Path(__file__).parent.parent / "ml" / "models" / "ldr_anomaly_detector.pkl"
-    if not model_path.exists():
-        print(f"⚠️  Model not found at {model_path}, using fallback detection")
-        return False
+def train_model_in_memory():
+    """Train Isolation Forest on synthetic LDR data — no .pkl file needed."""
+    global model, scaler, model_loaded
     try:
-        detector = AnomalyDetector()
-        detector.load_model(str(model_path))
+        # Generate realistic synthetic training data
+        np.random.seed(42)
+        normal_data = np.random.normal(loc=500, scale=100, size=800)       # Normal LDR ~300-700
+        anomaly_low = np.random.uniform(low=0, high=80, size=50)           # Anomaly: very low
+        anomaly_high = np.random.uniform(low=920, high=1023, size=50)      # Anomaly: very high
+        wide_variance = np.random.normal(loc=500, scale=250, size=100)     # Wide variance
+
+        all_data = np.concatenate([normal_data, anomaly_low, anomaly_high, wide_variance])
+        all_data = np.clip(all_data, 0, 1023).reshape(-1, 1)
+
+        # Fit scaler
+        scaler = StandardScaler()
+        scaled_data = scaler.fit_transform(all_data)
+
+        # Train Isolation Forest
+        model = IsolationForest(
+            n_estimators=100,
+            contamination=0.1,
+            random_state=42,
+            max_samples='auto'
+        )
+        model.fit(scaled_data)
         model_loaded = True
-        print(f"✓ Model loaded from {model_path}")
+        print("✓ Isolation Forest model trained in-memory (1000 synthetic samples)")
         return True
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
+        print(f"❌ Model training failed: {e}")
+        model_loaded = False
         return False
+
+def predict_anomaly(value):
+    """Run anomaly detection on a single LDR value."""
+    if model and scaler and model_loaded:
+        try:
+            features = np.array([[value]])
+            scaled = scaler.transform(features)
+            prediction = model.predict(scaled)[0]
+            score = -model.score_samples(scaled)[0]
+            is_anomaly = prediction == -1
+            anomaly_score = min(max(score * 100, 0), 100)
+            return {
+                "sensor_reading": value,
+                "is_anomaly": bool(is_anomaly),
+                "anomaly_score": round(anomaly_score, 2),
+                "status": "ANOMALY" if is_anomaly else "NORMAL",
+                "expected_range": {"min": 200, "max": 800}
+            }
+        except Exception as e:
+            print(f"Prediction error: {e}")
+
+    # Fallback threshold detection
+    is_anomaly = value < 100 or value > 900
+    return {
+        "sensor_reading": value,
+        "is_anomaly": is_anomaly,
+        "anomaly_score": 85.0 if is_anomaly else 15.0,
+        "status": "ANOMALY" if is_anomaly else "NORMAL",
+        "expected_range": {"min": 100, "max": 900}
+    }
+
+# ============================================================
+# Background Data Simulator
+# ============================================================
+
+simulator_running = False
+simulator_thread = None
+DEVICE_IDS = ["ESP32_001", "ESP32_002", "NEXUS_EDGE_01"]
+
+def generate_sensor_reading():
+    """Generate a realistic LDR sensor value."""
+    if random.random() < 0.80:
+        # Normal reading (80% of time)
+        value = random.gauss(500, 80)
+    else:
+        # Anomaly reading (20% of time)
+        value = random.choice([
+            random.uniform(0, 80),       # Very low (anomaly)
+            random.uniform(920, 1023),   # Very high (anomaly)
+            random.gauss(500, 200)       # Wide variance
+        ])
+    return max(0, min(1023, round(value, 2)))
+
+def simulator_loop():
+    """Background thread that continuously generates sensor data."""
+    global simulator_running
+    print("🔄 Background simulator started — generating live sensor data")
+    while simulator_running:
+        try:
+            device_id = random.choice(DEVICE_IDS)
+            ldr_value = generate_sensor_reading()
+
+            result = predict_anomaly(ldr_value)
+            is_anomaly = result["is_anomaly"]
+            anomaly_score = result["anomaly_score"]
+
+            store_reading(device_id, ldr_value, is_anomaly, anomaly_score)
+
+            if is_anomaly:
+                alert_type = "SPIKE" if ldr_value > 700 else "DIP" if ldr_value < 200 else "ANOMALY"
+                store_alert(device_id, ldr_value, anomaly_score, alert_type)
+
+            status_icon = "🔴 ANOMALY" if is_anomaly else "🟢 NORMAL"
+            print(f"{status_icon} | {device_id} | LDR: {ldr_value:.1f} | Score: {anomaly_score:.1f}")
+
+        except Exception as e:
+            print(f"⚠️ Simulator error: {e}")
+
+        time.sleep(3)  # One reading every 3 seconds
+
+    print("⏹ Background simulator stopped")
+
+def start_simulator():
+    """Start the background data simulator."""
+    global simulator_running, simulator_thread
+    if simulator_running:
+        return False  # Already running
+    simulator_running = True
+    simulator_thread = threading.Thread(target=simulator_loop, daemon=True)
+    simulator_thread.start()
+    return True
+
+def stop_simulator():
+    """Stop the background data simulator."""
+    global simulator_running
+    if not simulator_running:
+        return False
+    simulator_running = False
+    return True
 
 # ============================================================
 # API Endpoints
@@ -146,16 +264,18 @@ def load_model():
 @app.on_event("startup")
 async def startup_event():
     init_database()
-    load_model()
-    print("✓ API startup complete")
+    train_model_in_memory()
+    start_simulator()
+    print("✓ API startup complete — model trained, simulator active")
 
 @app.get("/", tags=["Health"])
 async def root():
     return {
         "service": "AI Anomaly Detection API",
-        "version": "2.0.0",
+        "version": "3.0.0",
         "status": "running",
-        "model_loaded": model_loaded
+        "model_loaded": model_loaded,
+        "simulator_active": simulator_running
     }
 
 @app.get("/health", tags=["Health"])
@@ -188,30 +308,12 @@ async def ingest_sensor_data(reading: SensorReading):
 
 @app.post("/detect-anomaly", tags=["Detection"])
 async def detect_anomaly(reading: SensorReading):
-    if detector and model_loaded:
-        try:
-            result = detector.predict(reading.ldr_value)
-            store_reading(reading.device_id, reading.ldr_value, result["is_anomaly"], result["anomaly_score"])
-            if result["is_anomaly"]:
-                alert_type = "SPIKE" if reading.ldr_value > 700 else "DIP" if reading.ldr_value < 200 else "ANOMALY"
-                store_alert(reading.device_id, reading.ldr_value, result["anomaly_score"], alert_type)
-            return result
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-    else:
-        # Fallback: simple threshold-based detection
-        is_anomaly = reading.ldr_value < 100 or reading.ldr_value > 900
-        score = 85.0 if is_anomaly else 15.0
-        store_reading(reading.device_id, reading.ldr_value, is_anomaly, score)
-        if is_anomaly:
-            store_alert(reading.device_id, reading.ldr_value, score, "THRESHOLD")
-        return {
-            "sensor_reading": reading.ldr_value,
-            "is_anomaly": is_anomaly,
-            "anomaly_score": score,
-            "status": "ANOMALY" if is_anomaly else "NORMAL",
-            "expected_range": {"min": 100, "max": 900}
-        }
+    result = predict_anomaly(reading.ldr_value)
+    store_reading(reading.device_id, reading.ldr_value, result["is_anomaly"], result["anomaly_score"])
+    if result["is_anomaly"]:
+        alert_type = "SPIKE" if reading.ldr_value > 700 else "DIP" if reading.ldr_value < 200 else "ANOMALY"
+        store_alert(reading.device_id, reading.ldr_value, result["anomaly_score"], alert_type)
+    return result
 
 @app.get("/alerts/recent", tags=["Alerts"])
 async def get_recent_alerts(limit: int = 10):
@@ -279,6 +381,24 @@ async def dismiss_alert(alert_id: int):
     conn.commit()
     conn.close()
     return {"status": "alert dismissed", "alert_id": alert_id}
+
+# ============================================================
+# Simulator Control Endpoints
+# ============================================================
+
+@app.get("/simulator/status", tags=["Simulator"])
+async def simulator_status():
+    return {"simulator_running": simulator_running}
+
+@app.post("/simulator/start", tags=["Simulator"])
+async def start_sim():
+    started = start_simulator()
+    return {"status": "started" if started else "already_running", "simulator_running": simulator_running}
+
+@app.post("/simulator/stop", tags=["Simulator"])
+async def stop_sim():
+    stopped = stop_simulator()
+    return {"status": "stopped" if stopped else "already_stopped", "simulator_running": simulator_running}
 
 if __name__ == "__main__":
     import uvicorn
