@@ -1,0 +1,21 @@
+flowchart LR
+    classDef default fill:#1e293b,stroke:#e2e8f0,stroke-width:2px,color:#f8fafc;
+    classDef actor fill:#334155,stroke:#94a3b8,stroke-width:2px,color:#fff,rx:20px,ry:20px;
+    classDef process fill:#0284c7,stroke:#bae6fd,stroke-width:2px,color:#fff,rx:5px,ry:5px;
+    classDef data fill:#8b5cf6,stroke:#ddd6fe,stroke-width:2px,color:#fff,rx:10px,ry:10px;
+
+    Env(((Environment))):::actor
+    LDR[LDR Sensor]:::actor
+    ESP((ESP32 Edge Processing)):::process
+    Cloud((Cloud Anomaly Engine)):::process
+    DB[(Alert Storage)]:::data
+    Dash((UI Rendering)):::process
+    User(((Operator))):::actor
+
+    Env -- Ambient Light --> LDR
+    LDR -- Analog Voltage --> ESP
+    ESP -- JSON Payload --> Cloud
+    Cloud -- AI Scoring --> DB
+    DB -- Persistent Logs --> Cloud
+    Cloud -- REST API --> Dash
+    Dash -- Visual Cues --> User

@@ -1,0 +1,20 @@
+flowchart TD
+    classDef start fill:#16a34a,stroke:#86efac,color:#fff,rx:20px,ry:20px;
+    classDef action fill:#2563eb,stroke:#93c5fd,color:#fff;
+    classDef decision fill:#d97706,stroke:#fcd34d,color:#fff;
+    classDef fail fill:#dc2626,stroke:#fca5a5,color:#fff;
+
+    Start([Power On ESP32]):::start --> WiFi[Initialize WiFi.begin()]:::action
+    WiFi --> Check{Connected?}:::decision
+    Check -- No --> Hold[Delay 500ms]:::action
+    Hold --> WiFi
+    
+    Check -- Yes --> Read[analogRead 34]:::action
+    Read --> Format[Format JSON Payload]:::action
+    Format --> Http[HTTPClient POST]:::action
+    Http --> Status{Code == 200?}:::decision
+    
+    Status -- Yes --> Wait[Delay 2000ms]:::action
+    Status -- No --> Err[Log Failure]:::fail
+    Err --> Wait
+    Wait --> Read

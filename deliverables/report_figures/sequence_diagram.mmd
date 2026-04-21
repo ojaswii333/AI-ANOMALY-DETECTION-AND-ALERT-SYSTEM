@@ -1,0 +1,27 @@
+sequenceDiagram
+    autonumber
+    actor Sensor as ESP32 Hardware
+    participant API as FastAPI Backend
+    participant AI as Isolation Forest
+    participant DB as SQLite DB
+    actor Admin as Next.js Dashboard
+
+    Sensor->>+API: HTTP POST /detect-anomaly {ldr: 450}
+    API->>+AI: model.predict([450])
+    AI-->>-API: Score: 0.15, Normal
+    API->>DB: INSERT (Normal)
+    API-->>-Sensor: HTTP 200 OK
+
+    Note over Sensor,API: 2 Seconds Later
+
+    Sensor->>+API: HTTP POST /detect-anomaly {ldr: 980}
+    API->>+AI: model.predict([980])
+    AI-->>-API: Score: 0.95, Anomaly
+    API->>DB: INSERT (Alert: SPIKE)
+    API-->>-Sensor: HTTP 200 OK
+
+    loop Every 3 Seconds
+        Admin->>+API: HTTP GET /dashboard/stats
+        API-->>-Admin: Return JSON Array
+        Admin->>Admin: React Component Hydration
+    end

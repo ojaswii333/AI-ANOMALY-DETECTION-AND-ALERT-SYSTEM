@@ -172,3 +172,109 @@
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
+
+/* ===== LIGHT MODE THEME ===== */
+html.light-mode {
+  --bg-obsidian: #F5F7FA;
+  --bg-surface: #EDF0F5;
+  --primary: #0891B2;
+  --primary-glow: rgba(8, 145, 178, 0.3);
+  --secondary: #7C3AED;
+  --secondary-glow: rgba(124, 58, 237, 0.3);
+  --anomaly: #DC2626;
+  --anomaly-glow: rgba(220, 38, 38, 0.3);
+  --success: #059669;
+  --success-glow: rgba(5, 150, 105, 0.3);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.6);
+}
+
+html.light-mode {
+  --color-obsidian: #F5F7FA;
+  --color-surface: #EDF0F5;
+  --color-primary: #0891B2;
+  --color-secondary: #7C3AED;
+  --color-anomaly: #DC2626;
+  --color-success: #059669;
+  --color-text-main: #1E293B;
+  --color-text-muted: #64748B;
+}
+
+html.light-mode body {
+  background-color: #F5F7FA;
+  color: #1E293B;
+}
+
+html.light-mode .bg-obsidian,
+html.light-mode .bg-obsidian\/50,
+html.light-mode .bg-obsidian\/80 {
+  background-color: #F5F7FA !important;
+}
+
+html.light-mode .bg-obsidian-light {
+  background-color: #EDF0F5 !important;
+}
+
+html.light-mode .text-text-main {
+  color: #1E293B !important;
+}
+
+html.light-mode .text-text-muted {
+  color: #64748B !important;
+}
+
+html.light-mode .bg-grid {
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+}
+
+html.light-mode .mesh-gradient {
+  background: radial-gradient(at 0% 0%, hsla(180, 80%, 40%, 0.08) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(260, 80%, 40%, 0.08) 0, transparent 50%),
+    radial-gradient(at 50% 100%, hsla(320, 80%, 40%, 0.05) 0, transparent 50%);
+}
+
+html.light-mode .premium-card {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+html.light-mode .premium-card:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+html.light-mode .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+html.light-mode .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light-mode .bg-black\/40 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+html.light-mode .border-glass-border {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+html.light-mode ::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+html.light-mode ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+html.light-mode .neon-button {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+html.light-mode .neon-button:hover {
+  box-shadow: 0 0 25px var(--primary-glow);
+}

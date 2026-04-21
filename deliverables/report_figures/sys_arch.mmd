@@ -1,0 +1,32 @@
+flowchart TD
+    classDef edge fill:#1e1e2f,stroke:#4ade80,stroke-width:2px,color:#fff,rx:10px,ry:10px;
+    classDef cloud fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff,rx:10px,ry:10px;
+    classDef db fill:#312e81,stroke:#a855f7,stroke-width:2px,color:#fff,rx:10px,ry:10px;
+    classDef client fill:#171717,stroke:#f87171,stroke-width:2px,color:#fff,rx:10px,ry:10px;
+
+    subgraph Tier 1: Edge Network
+        E[ESP32 Microcontroller]:::edge
+        S[LDR Analog Sensor]:::edge
+        S -->|Voltages| E
+    end
+
+    subgraph Tier 2: Core Intelligences
+        API[FastAPI Gateway]:::cloud
+        ML[Isolation Forest AI Engine]:::cloud
+        DB[(SQLite Database)]:::db
+        
+        API -->|Predict| ML
+        ML -->|Anomaly Score| API
+        API -->|Write Alert| DB
+    end
+
+    subgraph Tier 3: Client Access
+        UI[Next.js Premium Dashboard]:::client
+        User[System Administrator]:::client
+        
+        DB -.->|Read Sync| UI
+        UI -->|Display| User
+    end
+
+E -->|HTTP POST JSON| API
+UI -->|Polling GET| API

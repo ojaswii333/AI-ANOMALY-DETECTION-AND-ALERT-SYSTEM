@@ -1,0 +1,19 @@
+flowchart LR
+    classDef actor fill:#1e293b,stroke:#94a3b8,color:#fff,rx:20px,ry:20px;
+    classDef sys fill:#0f172a,stroke:#3b82f6,color:#fff;
+    classDef uc fill:#0284c7,stroke:#bae6fd,color:#fff,rx:15px,ry:15px;
+
+    Admin(((Operator))):::actor
+    System[Next.js Dashboard System]:::sys
+
+    subgraph User Actions
+        UC1(Monitor Live Data Charts):::uc
+        UC2(Check Alert Frequencies):::uc
+        UC3(View Incident Logs):::uc
+        UC4(Dismiss Resolved Alerts):::uc
+    end
+
+    Admin --- UC1
+    Admin --- UC2
+    Admin --- UC3
+    Admin --- UC4

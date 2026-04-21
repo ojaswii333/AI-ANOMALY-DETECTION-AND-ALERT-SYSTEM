@@ -1,0 +1,16 @@
+flowchart LR
+    classDef raw fill:#475569,stroke:#cbd5e1,color:#fff;
+    classDef engine fill:#7c3aed,stroke:#c4b5fd,color:#fff,rx:10px,ry:10px;
+    classDef split fill:#ea580c,stroke:#fdba74,color:#fff;
+    classDef normal fill:#059669,stroke:#6ee7b7,color:#fff;
+    classDef anomaly fill:#e11d48,stroke:#fda4af,color:#fff;
+
+    In([Incoming LDR Value]):::raw --> Scale(StandardScaler):::engine
+    Scale --> IF(Isolation Forest):::engine
+    IF --> Math{Calculate Path Length h_x}:::split
+    
+    Math -- Long Path Length --> ScoreN[Anomaly Score < 0.5]:::engine
+    Math -- Short Path Length --> ScoreA[Anomaly Score > 0.85]:::engine
+    
+    ScoreN --> OutN[[NORMAL]]:::normal
+    ScoreA --> OutA[[ANOMALY]]:::anomaly

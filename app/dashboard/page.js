@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, ShieldAlert, Cpu, Database, RefreshCw, Terminal, AlertTriangle, Layers } from 'lucide-react';
+import { Activity, ShieldAlert, Cpu, Database, RefreshCw, Terminal, AlertTriangle, Layers, Trash2, Brain, Zap } from 'lucide-react';
 import LiveChart from '../../components/LiveChart';
 import RecentReadings from '../../components/RecentReadings';
 import AlertCenter from '../../components/AlertCenter';
 import StatusCard from '../../components/StatusCard';
+import AlertSound from '../../components/AlertSound';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -22,8 +23,9 @@ export default function DashboardPage() {
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(new Date());
-    const [streamStatus, setStreamStatus] = useState('OFFLINE'); // 'LIVE' | 'IDLE' | 'OFFLINE'
+    const [streamStatus, setStreamStatus] = useState('OFFLINE');
     const [prevReadingCount, setPrevReadingCount] = useState(0);
+    const [actionLoading, setActionLoading] = useState(null);
 
     const fetchData = async () => {
         try {
@@ -39,7 +41,6 @@ export default function DashboardPage() {
             setLastUpdated(new Date());
             setLoading(false);
 
-            // Check if new data is flowing in
             const currentCount = statsRes.data.total_readings || 0;
             if (currentCount > prevReadingCount && prevReadingCount > 0) {
                 setStreamStatus('LIVE');
@@ -61,6 +62,29 @@ export default function DashboardPage() {
         const interval = setInterval(fetchData, 3000);
         return () => clearInterval(interval);
     }, []);
+
+    const handleClearData = async () => {
+        setActionLoading('clear');
+        try {
+            await axios.post(`${API_BASE_URL}/clear-data`);
+            setPrevReadingCount(0);
+            await fetchData();
+        } catch (e) {
+            console.error("Clear failed:", e);
+        }
+        setActionLoading(null);
+    };
+
+    const handleRetrain = async () => {
+        setActionLoading('train');
+        try {
+            const res = await axios.post(`${API_BASE_URL}/train`);
+            console.log("Retrain result:", res.data);
+        } catch (e) {
+            console.error("Retrain failed:", e);
+        }
+        setActionLoading(null);
+    };
 
     if (loading && readings.length === 0) {
         return (
@@ -99,6 +123,9 @@ export default function DashboardPage() {
 
     return (
         <div className="container mx-auto px-6 py-32 min-h-screen">
+            {/* Alert Sound System */}
+            <AlertSound alerts={alerts} />
+
             {/* Command Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -117,22 +144,42 @@ export default function DashboardPage() {
                     </p>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
+                    {/* Action Buttons */}
+                    <div className="hidden md:flex items-center gap-2">
+                        <button
+                            onClick={handleRetrain}
+                            disabled={actionLoading === 'train'}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-secondary/30 bg-secondary/5 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary/10 transition-all disabled:opacity-50"
+                        >
+                            <Brain size={14} className={actionLoading === 'train' ? 'animate-spin' : ''} />
+                            {actionLoading === 'train' ? 'Training...' : 'Retrain AI'}
+                        </button>
+                        <button
+                            onClick={handleClearData}
+                            disabled={actionLoading === 'clear'}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 text-amber-500 text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/10 transition-all disabled:opacity-50"
+                        >
+                            <Trash2 size={14} className={actionLoading === 'clear' ? 'animate-spin' : ''} />
+                            {actionLoading === 'clear' ? 'Clearing...' : 'Reset Demo'}
+                        </button>
+                    </div>
+
                     <div className="text-right hidden md:block">
                         <p className="text-[8px] font-black uppercase tracking-widest text-text-muted mb-1">Last Neural Sync</p>
                         <p className="text-xs font-mono text-primary">{lastUpdated.toLocaleTimeString()}</p>
                     </div>
                     <div className={`premium-card flex items-center gap-4 py-3 px-6 ${streamStatus === 'LIVE' ? 'bg-primary/5 border-primary/20' :
-                            streamStatus === 'IDLE' ? 'bg-amber-500/5 border-amber-500/20' :
-                                'bg-red-500/5 border-red-500/20'
+                        streamStatus === 'IDLE' ? 'bg-amber-500/5 border-amber-500/20' :
+                            'bg-red-500/5 border-red-500/20'
                         }`}>
                         <div className={`h-3 w-3 rounded-full ${streamStatus === 'LIVE' ? 'bg-primary animate-ping' :
-                                streamStatus === 'IDLE' ? 'bg-amber-500 animate-pulse' :
-                                    'bg-red-500'
+                            streamStatus === 'IDLE' ? 'bg-amber-500 animate-pulse' :
+                                'bg-red-500'
                             }`} />
                         <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${streamStatus === 'LIVE' ? 'text-primary' :
-                                streamStatus === 'IDLE' ? 'text-amber-500' :
-                                    'text-red-500'
+                            streamStatus === 'IDLE' ? 'text-amber-500' :
+                                'text-red-500'
                             }`}>Neural Stream {streamStatus}</span>
                     </div>
                 </div>
@@ -176,8 +223,8 @@ export default function DashboardPage() {
                     >
                         <div className="flex items-center justify-between mb-12">
                             <div>
-                                <h3 className="text-3xl font-black font-outfit italic tracking-tight">Signal <span className="text-primary text-2xl not-italic opacity-80">Propagation</span></h3>
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-text-muted font-black mt-2">NEXUS Energy Intensity Monitoring</p>
+                                <h3 className="text-3xl font-black font-outfit italic tracking-tight">Smart <span className="text-primary text-2xl not-italic opacity-80">Environment</span></h3>
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-text-muted font-black mt-2">NEXUS Environmental Parameter Matrix</p>
                             </div>
                             <div className="p-4 rounded-2xl bg-white/5 border border-glass-border">
                                 <Layers size={20} className="text-primary animate-pulse" />
@@ -206,11 +253,30 @@ export default function DashboardPage() {
                 </motion.div>
             </div>
 
+            {/* Mobile Action Buttons */}
+            <div className="md:hidden mt-12 flex flex-col gap-3">
+                <button
+                    onClick={handleRetrain}
+                    disabled={actionLoading === 'train'}
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl border border-secondary/30 bg-secondary/5 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary/10 transition-all disabled:opacity-50"
+                >
+                    <Brain size={14} className={actionLoading === 'train' ? 'animate-spin' : ''} />
+                    {actionLoading === 'train' ? 'Training...' : 'Retrain AI Model'}
+                </button>
+                <button
+                    onClick={handleClearData}
+                    disabled={actionLoading === 'clear'}
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/5 text-amber-500 text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/10 transition-all disabled:opacity-50"
+                >
+                    <Trash2 size={14} className={actionLoading === 'clear' ? 'animate-spin' : ''} />
+                    {actionLoading === 'clear' ? 'Clearing...' : 'Reset Demo Data'}
+                </button>
+            </div>
+
             {/* Footer Tag */}
             <div className="mt-32 text-center opacity-20 hover:opacity-100 transition-opacity">
-                <p className="text-[10px] font-black uppercase tracking-[0.8em] text-text-muted">Research Monitoring Interface • System Instance v2.0</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.8em] text-text-muted">Research Monitoring Interface • System Instance v4.0</p>
             </div>
         </div>
     );
 }
-

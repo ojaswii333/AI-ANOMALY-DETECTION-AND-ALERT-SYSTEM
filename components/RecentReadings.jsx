@@ -23,7 +23,7 @@ export default function RecentReadings({ readings = [] }) {
                     <thead>
                         <tr className="border-b border-glass-border">
                             <th className="pb-4 text-[10px] font-bold uppercase tracking-widest text-text-muted pl-2">Timestamp</th>
-                            <th className="pb-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">LDR Value</th>
+                            <th className="pb-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">Sensor Data (T, H, S)</th>
                             <th className="pb-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">Analysis</th>
                             <th className="pb-4 text-[10px] font-bold uppercase tracking-widest text-text-muted text-right pr-2">Action</th>
                         </tr>
@@ -47,7 +47,7 @@ export default function RecentReadings({ readings = [] }) {
                                 </td>
                                 <td className="py-4">
                                     <span className="text-xs font-mono font-bold text-primary">
-                                        {reading.ldr_value.toFixed(1)}
+                                        {reading.temperature?.toFixed(1)}°C | {reading.humidity?.toFixed(0)}% | {reading.soil_moisture?.toFixed(0)}
                                     </span>
                                 </td>
                                 <td className="py-4">
